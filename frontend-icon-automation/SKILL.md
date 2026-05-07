@@ -34,10 +34,11 @@ of the source SVG inside the target app unless the user explicitly asks to keep
 one.
 
 3. Do not create project-local generator config or HTML snippet files. In particular, do not write `icon.config.json` or `icon-head-snippet.html` into the target app. If non-default behavior is needed, pass an existing config path with `--config` or edit the real app integration files only when the user explicitly asks.
-4. For React projects, generate or update the logo component from `public/favicon.svg`:
+4. For React projects, generate or update the logo component from `public/logo.svg`:
    - Prefer an existing `Logo.tsx`, `logo.tsx`, `LogoIcon.tsx`, or similarly named logo component under `src`.
    - If no existing logo component is found, generate one in `src/components/icons/`.
-   - The component should render an `<img>` whose default `src` is `/favicon.svg`; do not inline the source SVG into TSX.
+   - The component should render an `<img>` whose default `src` is `/logo.svg`; do not inline the source SVG into TSX.
+   - `logo.svg` must be the no-background brand/logo asset. Do not use the rounded favicon as the React logo source.
    - Infer the component name from the input filename when it contains `logo`, such as `brand-logo.svg` -> `BrandLogo.tsx`; otherwise use the configured `react.componentName`.
    - Honor `react.file` when present in config; it is the explicit output path relative to the project root.
 5. For existing icon assets, update the existing same-semantics file instead of creating a duplicate default path:
@@ -78,13 +79,14 @@ Important options:
 
 The generator creates output directories before writing and logs every created or overwritten file:
 
+- `public/logo.svg` or an existing logo SVG path: no-background SVG logo for React/UI use.
 - `public/favicon.svg` and any existing app/favicon SVG path: rounded vector favicon with internal `prefers-color-scheme`.
 - `public/favicon.ico` or an existing favicon ICO path: 16, 32, and 48 px rounded fallback icon.
 - `public/apple-touch-icon.png` or an existing Apple icon path: 180 px opaque Apple home-screen icon.
 - `public/icon-192.png` and `public/icon-512.png`, or existing equivalent PWA icon paths: standard PWA icons.
 - `public/icon-maskable-192.png` and `public/icon-maskable-512.png`, or existing equivalent maskable paths: padded maskable PWA icons.
 - `public/manifest.webmanifest` or an existing webmanifest path: PWA manifest when enabled.
-- `src/components/icons/Logo.tsx` or an existing logo component path: optional React `<img src="/favicon.svg">` component.
+- `src/components/icons/Logo.tsx` or an existing logo component path: optional React `<img src="/logo.svg">` component.
 
 The generator does not create or preserve a source SVG copy in the app. The
 input SVG is read-only source material. It also does not create generator
@@ -101,8 +103,8 @@ Prefer the project's existing conventions over forcing defaults. Use these rules
 - If the project uses framework-native metadata, update metadata instead of adding duplicate HTML links, but only when the user asks for integration.
 - For React output, prefer updating an existing logo component over creating a duplicate component.
 - For icon output, prefer updating existing same-semantics icon files over creating duplicate defaults.
-- Always keep `public/favicon.svg` available because generated React logo components reference `/favicon.svg`.
-- For single-color SVG input, `favicon.svg` uses CSS and `prefers-color-scheme` to switch icon color automatically between light and dark modes. For multi-color SVG input, preserve the original colors instead of forcing CSS recoloring.
+- Always keep `public/logo.svg` available because generated React logo components reference `/logo.svg`.
+- For single-color SVG input, both `logo.svg` and `favicon.svg` use CSS and `prefers-color-scheme` to switch icon color automatically between light and dark modes. For multi-color SVG input, preserve the original colors instead of forcing CSS recoloring.
 - Keep the user-provided SVG as the only graphic source. Do not copy it into the app, and do not hand-edit generated PNG/ICO files.
 
 Read `references/project-integration.md` when making framework-specific edits beyond running the CLI.

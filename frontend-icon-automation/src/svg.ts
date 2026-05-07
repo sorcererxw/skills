@@ -86,6 +86,28 @@ export function makeThemeFaviconSvg(
   ].join("\n");
 }
 
+export function makeThemeLogoSvg(
+  svg: NormalizedSvg,
+  lightColor: string,
+  darkColor: string
+): string {
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${svg.viewBox}" color="${lightColor}">`,
+    ...(svg.monochrome
+      ? [
+          "  <style>",
+          "    @media (prefers-color-scheme: dark) {",
+          `      svg { color: ${darkColor}; }`,
+          "    }",
+          "  </style>"
+        ]
+      : []),
+    indent(svg.body, 2),
+    "</svg>",
+    ""
+  ].join("\n");
+}
+
 export function makeStaticIconSvg(
   svg: NormalizedSvg,
   size: number,

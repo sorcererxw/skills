@@ -38,6 +38,7 @@ if (result.status !== 0) {
 
 const expected = [
   "app/icon.svg",
+  "public/logo.svg",
   "public/favicon.svg",
   "public/favicon.ico",
   "public/apple-touch-icon.png",
@@ -60,11 +61,16 @@ if (!/rx="\d+"/.test(faviconSvg) || !faviconSvg.includes(".favicon-bg")) {
 
 const logoComponent = await fs.readFile(path.join(tmp, "src/components/brand/Logo.tsx"), "utf8");
 if (
-  !logoComponent.includes('src = "/favicon.svg"') ||
+  !logoComponent.includes('src = "/logo.svg"') ||
   !logoComponent.includes("return <img") ||
   !logoComponent.includes("export function Logo")
 ) {
-  throw new Error("existing React Logo.tsx must be updated to render /favicon.svg via img.");
+  throw new Error("existing React Logo.tsx must be updated to render /logo.svg via img.");
+}
+
+const logoSvg = await fs.readFile(path.join(tmp, "public/logo.svg"), "utf8");
+if (logoSvg.includes("favicon-bg") || /<rect\b/.test(logoSvg)) {
+  throw new Error("logo.svg must not include a favicon background.");
 }
 
 try {

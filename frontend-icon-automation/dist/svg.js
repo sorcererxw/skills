@@ -68,6 +68,23 @@ export function makeThemeFaviconSvg(svg, lightColor, darkColor, lightBackground,
         ""
     ].join("\n");
 }
+export function makeThemeLogoSvg(svg, lightColor, darkColor) {
+    return [
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${svg.viewBox}" color="${lightColor}">`,
+        ...(svg.monochrome
+            ? [
+                "  <style>",
+                "    @media (prefers-color-scheme: dark) {",
+                `      svg { color: ${darkColor}; }`,
+                "    }",
+                "  </style>"
+            ]
+            : []),
+        indent(svg.body, 2),
+        "</svg>",
+        ""
+    ].join("\n");
+}
 export function makeStaticIconSvg(svg, size, foreground, background, paddingRatio, radiusRatio = 0) {
     const padding = Math.round(size * paddingRatio);
     const radius = Math.round(size * radiusRatio);

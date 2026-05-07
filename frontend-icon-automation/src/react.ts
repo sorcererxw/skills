@@ -51,7 +51,7 @@ export interface ${componentName}Props extends ImgHTMLAttributes<HTMLImageElemen
 }
 
 export function ${componentName}({
-  src = "/favicon.svg",
+  src = "/logo.svg",
   alt = "",
   ...props
 }: ${componentName}Props) {

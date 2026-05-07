@@ -6,7 +6,7 @@ import { loadConfig } from "./config.js";
 import { makeManifest } from "./manifest.js";
 import { detectProject } from "./project.js";
 import { makeReactComponent, resolveReactLogoTarget } from "./react.js";
-import { makeStaticIconSvg, makeThemeFaviconSvg, normalizeSvg } from "./svg.js";
+import { makeStaticIconSvg, makeThemeFaviconSvg, makeThemeLogoSvg, normalizeSvg } from "./svg.js";
 export async function generateIcons(options) {
     const project = await detectProject(options.project);
     const config = await loadConfig({ ...options, project: project.root });
@@ -29,6 +29,11 @@ export async function generateIcons(options) {
         }
     }
     if (config.favicon.enabled && config.favicon.svg) {
+        await writeFiles(await resolveIconTargets(project.root, path.join(publicDir, "logo.svg"), [
+            "public/logo.svg",
+            "public/brand.svg",
+            "public/logo-icon.svg"
+        ], [path.join(publicDir, "logo.svg")]), () => makeThemeLogoSvg(svg, config.colors.lightIcon, config.colors.darkIcon), options.dryRun, written);
         await writeFiles(await resolveIconTargets(project.root, path.join(publicDir, "favicon.svg"), [
             "public/favicon.svg",
             "app/favicon.svg",
