@@ -1,119 +1,122 @@
 import prettier from "prettier";
-export async function makeReactComponent(svg, componentName) {
-    const jsxBody = toJsxAttributes(svg.body);
-    const source = `import type { CSSProperties, SVGProps } from "react";
+import fs from "fs-extra";
+import path from "node:path";
+const REACT_EXTENSIONS = [".tsx", ".jsx"];
+export async function resolveReactLogoTarget(options) {
+    const inputName = path.basename(options.inputPath, path.extname(options.inputPath));
+    const inferredName = inferLogoComponentName(inputName, options.configuredComponentName);
+    if (options.configuredFile) {
+        const filePath = path.resolve(options.projectRoot, options.configuredFile);
+        return {
+            filePath,
+            componentName: inferComponentNameFromFile(filePath, inferredName)
+        };
+    }
+    const existing = await findExistingLogoComponent(options.projectRoot, inputName);
+    if (existing) {
+        return {
+            filePath: existing,
+            componentName: inferComponentNameFromFile(existing, inferredName)
+        };
+    }
+    const fileName = `${inferredName}.tsx`;
+    return {
+        filePath: path.join(options.reactDir, fileName),
+        componentName: inferredName
+    };
+}
+export async function makeReactComponent(componentName) {
+    const source = `import type { ImgHTMLAttributes } from "react";
 
-export interface ${componentName}Props extends SVGProps<SVGSVGElement> {
-  title?: string;
-  "aria-label"?: string;
-  style?: CSSProperties;
+export interface ${componentName}Props extends ImgHTMLAttributes<HTMLImageElement> {
+  src?: string;
+  alt?: string;
 }
 
 export function ${componentName}({
-  title,
-  "aria-label": ariaLabel,
+  src = "/favicon.svg",
+  alt = "",
   ...props
 }: ${componentName}Props) {
-  const labelled = Boolean(title || ariaLabel);
-
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="${svg.viewBox}"
-      aria-hidden={labelled ? undefined : true}
-      role={labelled ? "img" : undefined}
-      aria-label={ariaLabel}
-      {...props}
-    >
-      {title ? <title>{title}</title> : null}
-      ${jsxBody}
-    </svg>
-  );
+  return <img src={src} alt={alt} {...props} />;
 }
 
 export default ${componentName};
 `;
     return prettier.format(source, { parser: "typescript" });
 }
-function toJsxAttributes(markup) {
-    const attributeNames = {
-        "accent-height": "accentHeight",
-        "alignment-baseline": "alignmentBaseline",
-        "baseline-shift": "baselineShift",
-        "clip-path": "clipPath",
-        "clip-rule": "clipRule",
-        "color-interpolation": "colorInterpolation",
-        "color-interpolation-filters": "colorInterpolationFilters",
-        "color-profile": "colorProfile",
-        "color-rendering": "colorRendering",
-        "dominant-baseline": "dominantBaseline",
-        "enable-background": "enableBackground",
-        "fill-opacity": "fillOpacity",
-        "fill-rule": "fillRule",
-        "flood-color": "floodColor",
-        "flood-opacity": "floodOpacity",
-        "font-family": "fontFamily",
-        "font-size": "fontSize",
-        "font-size-adjust": "fontSizeAdjust",
-        "font-stretch": "fontStretch",
-        "font-style": "fontStyle",
-        "font-variant": "fontVariant",
-        "font-weight": "fontWeight",
-        "glyph-name": "glyphName",
-        "glyph-orientation-horizontal": "glyphOrientationHorizontal",
-        "glyph-orientation-vertical": "glyphOrientationVertical",
-        "horiz-adv-x": "horizAdvX",
-        "horiz-origin-x": "horizOriginX",
-        "image-rendering": "imageRendering",
-        "letter-spacing": "letterSpacing",
-        "lighting-color": "lightingColor",
-        "marker-end": "markerEnd",
-        "marker-mid": "markerMid",
-        "marker-start": "markerStart",
-        "overline-position": "overlinePosition",
-        "overline-thickness": "overlineThickness",
-        "paint-order": "paintOrder",
-        "panose-1": "panose1",
-        "pointer-events": "pointerEvents",
-        "rendering-intent": "renderingIntent",
-        "shape-rendering": "shapeRendering",
-        "stop-color": "stopColor",
-        "stop-opacity": "stopOpacity",
-        "strikethrough-position": "strikethroughPosition",
-        "strikethrough-thickness": "strikethroughThickness",
-        "stroke-dasharray": "strokeDasharray",
-        "stroke-dashoffset": "strokeDashoffset",
-        "stroke-linecap": "strokeLinecap",
-        "stroke-linejoin": "strokeLinejoin",
-        "stroke-miterlimit": "strokeMiterlimit",
-        "stroke-opacity": "strokeOpacity",
-        "stroke-width": "strokeWidth",
-        "text-anchor": "textAnchor",
-        "text-decoration": "textDecoration",
-        "text-rendering": "textRendering",
-        "underline-position": "underlinePosition",
-        "underline-thickness": "underlineThickness",
-        "unicode-bidi": "unicodeBidi",
-        "unicode-range": "unicodeRange",
-        "units-per-em": "unitsPerEm",
-        "v-alphabetic": "vAlphabetic",
-        "v-hanging": "vHanging",
-        "v-ideographic": "vIdeographic",
-        "v-mathematical": "vMathematical",
-        "vector-effect": "vectorEffect",
-        "vert-adv-y": "vertAdvY",
-        "vert-origin-x": "vertOriginX",
-        "vert-origin-y": "vertOriginY",
-        "word-spacing": "wordSpacing",
-        "writing-mode": "writingMode",
-        "x-height": "xHeight",
-        "xlink:href": "xlinkHref",
-        "xmlns:xlink": "xmlnsXlink",
-        class: "className"
-    };
-    return markup.replace(/\s([:\w-]+)=/g, (match, name) => {
-        if (name.startsWith("aria-") || name.startsWith("data-"))
-            return match;
-        return ` ${attributeNames[name] ?? name}=`;
-    });
+function inferLogoComponentName(inputName, fallback) {
+    const pascal = toPascalCase(inputName);
+    if (pascal && /Logo$/i.test(pascal))
+        return pascal;
+    if (inputName.toLowerCase().includes("logo"))
+        return pascal || "Logo";
+    return fallback || "Logo";
+}
+async function findExistingLogoComponent(root, inputName) {
+    const srcRoot = path.join(root, "src");
+    const searchRoot = (await fs.pathExists(srcRoot)) ? srcRoot : root;
+    const inputBase = inputName.toLowerCase();
+    const exactNames = new Set([
+        ...REACT_EXTENSIONS.map((ext) => `${inputBase}${ext}`),
+        ...REACT_EXTENSIONS.map((ext) => `logo${ext}`),
+        ...REACT_EXTENSIONS.map((ext) => `logo-icon${ext}`),
+        ...REACT_EXTENSIONS.map((ext) => `logoicon${ext}`)
+    ]);
+    const candidates = [];
+    await visit(searchRoot, candidates);
+    const ranked = candidates
+        .map((candidate) => ({ path: candidate, score: scoreLogoCandidate(candidate, exactNames) }))
+        .sort((a, b) => a.score - b.score);
+    const best = ranked[0];
+    if (!best)
+        return undefined;
+    const tied = ranked.filter((candidate) => candidate.score === best.score);
+    if (tied.length > 1) {
+        const list = tied.map((candidate) => `  - ${path.relative(root, candidate.path)}`).join("\n");
+        throw new Error(`Multiple existing logo component candidates found. Set react.file in icon.config.json to choose one:\n${list}`);
+    }
+    return best.path;
+}
+async function visit(dir, candidates) {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (entry.name.startsWith(".") || entry.name === "node_modules" || entry.name === "dist") {
+            continue;
+        }
+        const entryPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            await visit(entryPath, candidates);
+            continue;
+        }
+        if (!entry.isFile())
+            continue;
+        const lower = entry.name.toLowerCase();
+        if (REACT_EXTENSIONS.some((ext) => lower.endsWith(ext)) && lower.includes("logo")) {
+            candidates.push(entryPath);
+        }
+    }
+}
+function scoreLogoCandidate(filePath, exactNames) {
+    const fileName = path.basename(filePath).toLowerCase();
+    if (exactNames.has(fileName))
+        return 0;
+    if (fileName === "logo.tsx")
+        return 1;
+    if (fileName === "logo.jsx")
+        return 2;
+    if (fileName.includes("logo"))
+        return 10;
+    return 100;
+}
+function inferComponentNameFromFile(filePath, fallback) {
+    const name = toPascalCase(path.basename(filePath, path.extname(filePath)));
+    return name || fallback;
+}
+function toPascalCase(value) {
+    return value
+        .split(/[^A-Za-z0-9]+/)
+        .filter(Boolean)
+        .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+        .join("");
 }

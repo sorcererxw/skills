@@ -6,9 +6,7 @@ export const defaultConfig: IconConfig = {
   input: "assets/source.svg",
   output: {
     publicDir: "public",
-    reactDir: "src/components/icons",
-    snippetFile: "icon-head-snippet.html",
-    snippet: false
+    reactDir: "src/components/icons"
   },
   app: {
     name: "My App",
@@ -28,12 +26,14 @@ export const defaultConfig: IconConfig = {
   },
   react: {
     enabled: true,
-    componentName: "LogoIcon"
+    componentName: "Logo"
   },
   favicon: {
     enabled: true,
     svg: true,
-    ico: true
+    ico: true,
+    paddingRatio: 0.12,
+    radiusRatio: 0.22
   },
   pwa: {
     enabled: true,
@@ -71,10 +71,6 @@ export async function loadConfig(options: GenerateOptions): Promise<IconConfig> 
     merged.pwa.enabled = options.pwa;
   }
 
-  if (typeof options.snippet === "boolean") {
-    merged.output.snippet = options.snippet;
-  }
-
   validateConfig(merged);
   return merged;
 }
@@ -101,6 +97,15 @@ function validateConfig(config: IconConfig): void {
   ]) {
     if (!/^#[0-9a-f]{6}$/i.test(color)) {
       throw new Error(`Invalid color "${color}". Use a 6-digit hex color.`);
+    }
+  }
+
+  for (const [name, value] of [
+    ["favicon.paddingRatio", config.favicon.paddingRatio],
+    ["favicon.radiusRatio", config.favicon.radiusRatio]
+  ] as const) {
+    if (!Number.isFinite(value) || value < 0 || value >= 0.5) {
+      throw new Error(`${name} must be a number from 0 to less than 0.5.`);
     }
   }
 }

@@ -5,8 +5,6 @@ export interface IconConfig {
   output: {
     publicDir: string;
     reactDir: string;
-    snippetFile: string;
-    snippet: boolean;
   };
   app: {
     name: string;
@@ -27,11 +25,14 @@ export interface IconConfig {
   react: {
     enabled: boolean;
     componentName: string;
+    file?: string;
   };
   favicon: {
     enabled: boolean;
     svg: boolean;
     ico: boolean;
+    paddingRatio: number;
+    radiusRatio: number;
   };
   pwa: {
     enabled: boolean;
@@ -52,14 +53,15 @@ export interface GenerateOptions {
   dryRun: boolean;
   react?: boolean;
   pwa?: boolean;
-  snippet?: boolean;
 }
 
 export interface NormalizedSvg {
   optimized: string;
   currentColor: string;
   viewBox: string;
+  originalBody: string;
   body: string;
+  monochrome: boolean;
 }
 
 export interface WrittenFile {

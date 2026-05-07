@@ -2,9 +2,7 @@
   "input": "assets/source.svg",
   "output": {
     "publicDir": "public",
-    "reactDir": "src/components/icons",
-    "snippetFile": "icon-head-snippet.html",
-    "snippet": false
+    "reactDir": "src/components/icons"
   },
   "app": {
     "name": "My App",
@@ -24,12 +22,14 @@
   },
   "react": {
     "enabled": true,
-    "componentName": "LogoIcon"
+    "componentName": "Logo"
   },
   "favicon": {
     "enabled": true,
     "svg": true,
-    "ico": true
+    "ico": true,
+    "paddingRatio": 0.12,
+    "radiusRatio": 0.22
   },
   "pwa": {
     "enabled": true,

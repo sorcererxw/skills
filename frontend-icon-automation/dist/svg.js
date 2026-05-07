@@ -20,13 +20,17 @@ export function normalizeSvg(svgText) {
     }
     const optimized = ensureViewBox(optimizedResult.data);
     const viewBox = extractViewBox(optimized);
+    const monochrome = isMonochromeSvg(optimized);
     const currentColor = toCurrentColor(optimized);
-    const body = stripSvgRoot(currentColor);
+    const originalBody = stripSvgRoot(optimized);
+    const body = monochrome ? stripSvgRoot(currentColor) : originalBody;
     return {
         optimized,
         currentColor,
         viewBox,
-        body
+        originalBody,
+        body,
+        monochrome
     };
 }
 export function extractViewBox(svgText) {
@@ -43,25 +47,35 @@ export function stripSvgRoot(svgText) {
     }
     return match[1].trim();
 }
-export function makeThemeFaviconSvg(svg, lightColor, darkColor) {
+export function makeThemeFaviconSvg(svg, lightColor, darkColor, lightBackground, darkBackground, paddingRatio, radiusRatio) {
+    const size = 64;
+    const padding = Math.round(size * paddingRatio);
+    const radius = Math.round(size * radiusRatio);
+    const contentSize = size - padding * 2;
     return [
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${svg.viewBox}" color="${lightColor}">`,
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" color="${lightColor}">`,
         "  <style>",
         "    @media (prefers-color-scheme: dark) {",
-        `      svg { color: ${darkColor}; }`,
+        ...(svg.monochrome ? [`      svg { color: ${darkColor}; }`] : []),
+        `      .favicon-bg { fill: ${darkBackground}; }`,
         "    }",
         "  </style>",
-        indent(svg.body, 2),
+        `  <rect class="favicon-bg" width="${size}" height="${size}" rx="${radius}" fill="${lightBackground}"/>`,
+        `  <svg x="${padding}" y="${padding}" width="${contentSize}" height="${contentSize}" viewBox="${svg.viewBox}">`,
+        indent(svg.body, 4),
+        "  </svg>",
         "</svg>",
         ""
     ].join("\n");
 }
-export function makeStaticIconSvg(svg, size, foreground, background, paddingRatio) {
+export function makeStaticIconSvg(svg, size, foreground, background, paddingRatio, radiusRatio = 0) {
     const padding = Math.round(size * paddingRatio);
+    const radius = Math.round(size * radiusRatio);
     const contentSize = size - padding * 2;
+    const radiusAttribute = radius > 0 ? ` rx="${radius}"` : "";
     return [
         `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">`,
-        `  <rect width="${size}" height="${size}" fill="${background}"/>`,
+        `  <rect width="${size}" height="${size}"${radiusAttribute} fill="${background}"/>`,
         `  <svg x="${padding}" y="${padding}" width="${contentSize}" height="${contentSize}" viewBox="${svg.viewBox}" color="${foreground}">`,
         indent(svg.body, 4),
         "  </svg>",
@@ -90,6 +104,22 @@ function toCurrentColor(svgText) {
     return svgText
         .replace(/\b(fill|stroke)=(["'])(?!none\b|currentColor\b|url\()([^"']+)\2/gi, "$1=$2currentColor$2")
         .replace(/(fill|stroke)\s*:\s*(?!none\b|currentColor\b|url\()[^;"']+/gi, "$1:currentColor");
+}
+function isMonochromeSvg(svgText) {
+    const colors = new Set();
+    const colorPatterns = [
+        /\b(?:fill|stroke)=(["'])(?!none\b|currentColor\b|url\()([^"']+)\1/gi,
+        /(?:fill|stroke)\s*:\s*(?!none\b|currentColor\b|url\()([^;"'}]+)/gi
+    ];
+    for (const pattern of colorPatterns) {
+        let match;
+        while ((match = pattern.exec(svgText)) !== null) {
+            const value = (match[2] ?? match[1] ?? "").trim().toLowerCase();
+            if (value)
+                colors.add(value);
+        }
+    }
+    return colors.size <= 1;
 }
 function indent(value, spaces) {
     const prefix = " ".repeat(spaces);

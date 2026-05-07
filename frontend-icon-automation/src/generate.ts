@@ -5,8 +5,7 @@ import sharp from "sharp";
 import { loadConfig } from "./config.js";
 import { makeManifest } from "./manifest.js";
 import { detectProject } from "./project.js";
-import { makeReactComponent } from "./react.js";
-import { makeHeadSnippet } from "./snippet.js";
+import { makeReactComponent, resolveReactLogoTarget } from "./react.js";
 import { makeStaticIconSvg, makeThemeFaviconSvg, normalizeSvg } from "./svg.js";
 import type { GenerateOptions, IconConfig, WrittenFile } from "./types.js";
 
@@ -27,7 +26,6 @@ export async function generateIcons(options: GenerateOptions): Promise<WrittenFi
   const svg = normalizeSvg(svgText);
   const publicDir = path.resolve(project.root, config.output.publicDir);
   const reactDir = path.resolve(project.root, config.output.reactDir);
-  const snippetPath = path.resolve(project.root, config.output.snippetFile);
   const written: WrittenFile[] = [];
 
   if (!options.dryRun) {
@@ -38,9 +36,24 @@ export async function generateIcons(options: GenerateOptions): Promise<WrittenFi
   }
 
   if (config.favicon.enabled && config.favicon.svg) {
-    await writeFile(
-      path.join(publicDir, "favicon.svg"),
-      makeThemeFaviconSvg(svg, config.colors.lightIcon, config.colors.darkIcon),
+    await writeFiles(
+      await resolveIconTargets(project.root, path.join(publicDir, "favicon.svg"), [
+        "public/favicon.svg",
+        "app/favicon.svg",
+        "app/icon.svg",
+        "src/app/favicon.svg",
+        "src/app/icon.svg"
+      ], [path.join(publicDir, "favicon.svg")]),
+      () =>
+        makeThemeFaviconSvg(
+          svg,
+          config.colors.lightIcon,
+          config.colors.darkIcon,
+          config.colors.appBackground,
+          config.colors.themeColorDark,
+          config.favicon.paddingRatio,
+          config.favicon.radiusRatio
+        ),
       options.dryRun,
       written
     );
@@ -48,24 +61,56 @@ export async function generateIcons(options: GenerateOptions): Promise<WrittenFi
 
   if (config.favicon.enabled && config.favicon.ico) {
     const ico = await makeIco(svg, config);
-    await writeFile(path.join(publicDir, "favicon.ico"), ico, options.dryRun, written);
+    await writeFiles(
+      await resolveIconTargets(project.root, path.join(publicDir, "favicon.ico"), [
+        "public/favicon.ico",
+        "app/favicon.ico",
+        "src/app/favicon.ico"
+      ]),
+      () => ico,
+      options.dryRun,
+      written
+    );
   }
 
   if (config.apple.enabled) {
     const apple = await renderPng(svg, config.apple.size, config, 0.16);
-    await writeFile(path.join(publicDir, "apple-touch-icon.png"), apple, options.dryRun, written);
+    await writeFiles(
+      await resolveIconTargets(project.root, path.join(publicDir, "apple-touch-icon.png"), [
+        "public/apple-touch-icon.png",
+        "public/apple-icon.png",
+        "app/apple-icon.png",
+        "src/app/apple-icon.png"
+      ]),
+      () => apple,
+      options.dryRun,
+      written
+    );
   }
 
   if (config.pwa.enabled) {
     for (const size of config.pwa.icons) {
       const regular = await renderPng(svg, size, config, 0.12);
-      await writeFile(path.join(publicDir, `icon-${size}.png`), regular, options.dryRun, written);
+      await writeFiles(
+        await resolveIconTargets(project.root, path.join(publicDir, `icon-${size}.png`), [
+          `public/icon-${size}.png`,
+          `public/icons/icon-${size}.png`,
+          `app/icon-${size}.png`,
+          `src/app/icon-${size}.png`
+        ]),
+        () => regular,
+        options.dryRun,
+        written
+      );
 
       if (config.pwa.maskable) {
         const maskable = await renderPng(svg, size, config, 0.2);
-        await writeFile(
-          path.join(publicDir, `icon-maskable-${size}.png`),
-          maskable,
+        await writeFiles(
+          await resolveIconTargets(project.root, path.join(publicDir, `icon-maskable-${size}.png`), [
+            `public/icon-maskable-${size}.png`,
+            `public/icons/icon-maskable-${size}.png`
+          ]),
+          () => maskable,
           options.dryRun,
           written
         );
@@ -73,9 +118,15 @@ export async function generateIcons(options: GenerateOptions): Promise<WrittenFi
     }
 
     if (config.pwa.manifest) {
-      await writeFile(
-        path.join(publicDir, "manifest.webmanifest"),
-        await makeManifest(config),
+      const manifest = await makeManifest(config);
+      await writeFiles(
+        await resolveIconTargets(project.root, path.join(publicDir, "manifest.webmanifest"), [
+          "public/manifest.webmanifest",
+          "public/site.webmanifest",
+          "app/manifest.webmanifest",
+          "src/app/manifest.webmanifest"
+        ]),
+        () => manifest,
         options.dryRun,
         written
       );
@@ -83,16 +134,19 @@ export async function generateIcons(options: GenerateOptions): Promise<WrittenFi
   }
 
   if (config.react.enabled) {
+    const target = await resolveReactLogoTarget({
+      projectRoot: project.root,
+      inputPath,
+      reactDir,
+      configuredComponentName: config.react.componentName,
+      configuredFile: config.react.file
+    });
     await writeFile(
-      path.join(reactDir, `${config.react.componentName}.tsx`),
-      await makeReactComponent(svg, config.react.componentName),
+      target.filePath,
+      await makeReactComponent(target.componentName),
       options.dryRun,
       written
     );
-  }
-
-  if (config.output.snippet) {
-    await writeFile(snippetPath, await makeHeadSnippet(config), options.dryRun, written);
   }
 
   printSummary(written, project.root);
@@ -116,8 +170,28 @@ async function renderPng(
 }
 
 async function makeIco(svg: ReturnType<typeof normalizeSvg>, config: IconConfig): Promise<Buffer> {
-  const pngs = await Promise.all([16, 32, 48].map((size) => renderPng(svg, size, config, 0.12)));
+  const pngs = await Promise.all(
+    [16, 32, 48].map((size) =>
+      renderFaviconPng(svg, size, config)
+    )
+  );
   return pngToIco(pngs);
+}
+
+async function renderFaviconPng(
+  svg: ReturnType<typeof normalizeSvg>,
+  size: number,
+  config: IconConfig
+): Promise<Buffer> {
+  const iconSvg = makeStaticIconSvg(
+    svg,
+    size,
+    config.colors.appForeground,
+    config.colors.appBackground,
+    config.favicon.paddingRatio,
+    config.favicon.radiusRatio
+  );
+  return sharp(Buffer.from(iconSvg)).png().toBuffer();
 }
 
 async function writeFile(
@@ -138,6 +212,35 @@ async function writeFile(
   console.log(`[${status}] ${filePath}`);
 }
 
+async function writeFiles(
+  filePaths: string[],
+  content: () => string | Buffer,
+  dryRun: boolean,
+  written: WrittenFile[]
+): Promise<void> {
+  const value = content();
+  for (const filePath of filePaths) {
+    await writeFile(filePath, value, dryRun, written);
+  }
+}
+
+async function resolveIconTargets(
+  projectRoot: string,
+  defaultPath: string,
+  candidatePaths: string[],
+  alwaysInclude: string[] = []
+): Promise<string[]> {
+  const existing: string[] = [];
+  for (const candidate of candidatePaths) {
+    const filePath = path.resolve(projectRoot, candidate);
+    if (await fs.pathExists(filePath)) {
+      existing.push(filePath);
+    }
+  }
+  const targets = existing.length > 0 ? existing : [defaultPath];
+  return Array.from(new Set([...targets, ...alwaysInclude.map((filePath) => path.resolve(filePath))]));
+}
+
 function printSummary(written: WrittenFile[], projectRoot: string): void {
   console.log("");
   console.log("Generated icon outputs:");
@@ -145,12 +248,4 @@ function printSummary(written: WrittenFile[], projectRoot: string): void {
     console.log(`- ${file.status}: ${path.relative(projectRoot, file.path)}`);
   }
 
-  if (written.some((file) => path.basename(file.path) === "icon-head-snippet.html")) {
-    console.log("");
-    console.log("Reference the generated head snippet from:");
-    console.log("- index.html for Vite/static apps");
-    console.log("- app/layout.tsx metadata for Next.js App Router");
-    console.log("- pages/_document.tsx or a shared Head component for Next.js Pages Router");
-    console.log("- framework-specific root head/link exports for Remix, Astro, or SvelteKit");
-  }
 }

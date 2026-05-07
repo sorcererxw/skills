@@ -18,7 +18,7 @@ Use $frontend-icon-automation to generate favicon and PWA assets from this SVG.
 
 | Skill | Purpose | Main Files |
 | --- | --- | --- |
-| `frontend-icon-automation` | Generate favicon, Apple Touch Icon, PWA regular and maskable icons, `manifest.webmanifest`, and an optional React `currentColor` logo component from one SVG source. | `frontend-icon-automation/SKILL.md`, `frontend-icon-automation/package.json`, `frontend-icon-automation/src/`, `frontend-icon-automation/references/` |
+| `frontend-icon-automation` | Generate rounded favicon assets, Apple Touch Icon, PWA regular and maskable icons, `manifest.webmanifest`, and an optional React `currentColor` logo component from one SVG source. | `frontend-icon-automation/SKILL.md`, `frontend-icon-automation/package.json`, `frontend-icon-automation/src/`, `frontend-icon-automation/references/` |
 | `tailwindcss-clean` | Audit and replace ad hoc Tailwind bracket values and low-value global CSS classes with project tokens, inline utilities, component abstractions, or documented exceptions. | `tailwindcss-clean/SKILL.md`, `tailwindcss-clean/scripts/audit-arbitrary-values.ts` |
 
 ## Repository Layout

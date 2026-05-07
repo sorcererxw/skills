@@ -10,12 +10,11 @@ program
     .command("generate")
     .description("Generate icon assets from a source SVG.")
     .option("--project <dir>", "frontend app root", process.cwd())
-    .option("--input <svg>", "source SVG path relative to project root")
+    .option("--input <svg>", "source SVG path, absolute or relative to project root")
     .option("--config <json>", "config JSON path relative to project root")
     .option("--dry-run", "print planned writes without changing files", false)
     .option("--no-react", "disable React component generation")
     .option("--no-pwa", "disable PWA icon and manifest generation")
-    .option("--snippet", "write icon-head-snippet.html for manual HTML integration", false)
     .action(async (options) => {
     try {
         await generateIcons({
@@ -24,8 +23,7 @@ program
             config: options.config,
             dryRun: options.dryRun,
             react: options.react,
-            pwa: options.pwa,
-            snippet: options.snippet
+            pwa: options.pwa
         });
     }
     catch (error) {
