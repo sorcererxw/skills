@@ -1,0 +1,44 @@
+{
+  "input": "assets/source.svg",
+  "output": {
+    "publicDir": "public",
+    "reactDir": "src/components/icons",
+    "snippetFile": "icon-head-snippet.html",
+    "snippet": false
+  },
+  "app": {
+    "name": "My App",
+    "shortName": "MyApp",
+    "startUrl": "/",
+    "scope": "/",
+    "display": "standalone"
+  },
+  "colors": {
+    "lightIcon": "#111111",
+    "darkIcon": "#ffffff",
+    "appBackground": "#ffffff",
+    "appForeground": "#111111",
+    "themeColor": "#ffffff",
+    "themeColorDark": "#000000",
+    "backgroundColor": "#ffffff"
+  },
+  "react": {
+    "enabled": true,
+    "componentName": "LogoIcon"
+  },
+  "favicon": {
+    "enabled": true,
+    "svg": true,
+    "ico": true
+  },
+  "pwa": {
+    "enabled": true,
+    "manifest": true,
+    "icons": [192, 512],
+    "maskable": true
+  },
+  "apple": {
+    "enabled": true,
+    "size": 180
+  }
+}

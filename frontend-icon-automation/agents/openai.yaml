@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Icon Automation"
+  short_description: "Generate app icons from one SVG"
+  default_prompt: "Use $frontend-icon-automation to generate favicon, PWA, Apple, and React logo assets from one source SVG."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tailwind CSS Clean"
+  short_description: "Replace ad hoc Tailwind bracket values"
+  default_prompt: "Use $tailwindcss-clean to audit and replace Tailwind arbitrary value classes with project tokens."

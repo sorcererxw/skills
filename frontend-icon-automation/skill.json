@@ -1,0 +1,12 @@
+{
+  "name": "frontend-icon-automation",
+  "version": "0.1.0",
+  "description": "Generate favicon, PWA, Apple, maskable, manifest, and React currentColor logo outputs from one SVG source.",
+  "entry": {
+    "command": "npm run icon-skill -- generate",
+    "packageManager": "npm",
+    "workingDirectory": "."
+  },
+  "sourceOfTruth": "input SVG",
+  "defaultConfig": "examples/icon.config.json"
+}
