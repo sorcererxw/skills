@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Multica"
+  short_description: "Turn planning context into Multica issues"
+  default_prompt: "Use $to-multica to turn this plan into a Multica parent issue with vertical-slice child issues."
